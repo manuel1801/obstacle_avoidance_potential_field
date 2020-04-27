@@ -9,8 +9,9 @@ radius = 1.0
 
 
 def draw(path, obst, r):
-    circle = plt.Circle((obst[0], obst[1]), r)
-    plt.gcf().gca().add_artist(circle)
+    for o in obst:
+        circle = plt.Circle((o[0], o[1]), r)
+        plt.gcf().gca().add_artist(circle)
 
     for p in path:
         plt.scatter(p[0], p[1], s=0.1, c='blue')
@@ -46,8 +47,7 @@ def F_rep(q, q_o, K, d0, radius):
 
 
 q = [10, 8]
-q_o = [20, 15]
-q_o2 = [30, 20]
+q_o = [[20, 15], [30, 25]]
 q_g = [45, 35]
 
 
@@ -58,8 +58,16 @@ d = dist(q, q_g)
 
 while d > 0.5:
     f_att = F_att(q, q_g, K_a)
-    f_rep = F_rep(q, q_o, K_r, d0, radius)
-    f_ges = [f_att[0] + f_rep[0], f_att[1] + f_rep[1]]
+    f_rep = []
+    f_ges_x = 0
+    f_ges_y = 0
+
+    for o in q_o:
+        f_rep.append(F_rep(q, o, K_r, d0, radius))
+        f_ges_x
+
+
+    f_ges = [f_att[0] + f_rep[0] + f_rep2[0], f_att[1] + f_rep[1] + f_rep2[1]]
     f_magnitude = magnitude(f_ges)
 
     q[0] += delta * (f_ges[0] / f_magnitude)
@@ -68,5 +76,5 @@ while d > 0.5:
     path.append([q[0], q[1]])
     d = dist(q, q_g)
 
-
-draw(path, q_o, radius)
+o_all = [q_o, q_o2]
+draw(path, o_all, radius)
