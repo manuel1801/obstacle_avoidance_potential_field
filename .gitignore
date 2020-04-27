@@ -1,8 +1,3 @@
-*
-!.gitignore
-!src/
-!CMakeLists.txt
-!package.xml
-!potential_field_planning.py
-!start.launch
-!start.ops
+*.log
+.vscode
+update_monitor.py
