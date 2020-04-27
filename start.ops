@@ -1,0 +1,23 @@
+import("rtt_ros")
+ros.import("obstacle_avoidance_potential_field")
+
+## Load a HelloRobot component
+loadComponent("potential_field","PotentialField")
+
+## Give it a periodic activity
+# setActivity("potential_field",0.0,HighestPriority,ORO_SCHED_RT)
+
+## Create connections
+# stream("potential_field.float_out", ros.topic("float_out"))
+# stream("potential_field.float_in", ros.topic("float_in"))
+# stream("potential_field.string_out", ros.topic("string_out"))
+# stream("potential_field.string_in", ros.topic("string_in"))
+
+## Connect the 
+# loadService("potential_field","rosservice")
+# potential_field.rosservice.connect( "increment", "/increment", "std_srvs/Empty")
+# potential_field.rosservice.connect( "updated", "/updated", "std_srvs/Empty")
+
+## Configure and start the hello_robot component
+# potential_field.configure()
+# potential_field.start()
