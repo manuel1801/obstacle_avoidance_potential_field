@@ -1,3 +1,6 @@
 *.log
 .vscode
 update_monitor.py
+test*
+temp*
+out
