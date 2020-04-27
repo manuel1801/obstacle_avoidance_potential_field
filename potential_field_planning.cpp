@@ -7,10 +7,10 @@ using namespace std;
 namespace plt = matplotlibcpp;
 
 float delta = 0.1;
-float K_a = 50.0;
+float K_a = 5.0;
 float K_r = 100.0;
 float d0 = 5.0;
-float radius = 1.0;
+float radius = 1.3;
 
 void draw(vector<float> path_x, vector<float> path_y, float *o_x, float *o_y, int n)
 {

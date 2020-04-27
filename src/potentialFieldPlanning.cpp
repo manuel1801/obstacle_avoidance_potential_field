@@ -12,10 +12,10 @@
 using namespace std;
 using namespace RTT;
 
-class PotentialField : public RTT::TaskContext
+class PotentialFielPlanning : public RTT::TaskContext
 {
-private:
-  // InputPort<std_msgs::Float64> inport;
+
+public:
   OutputPort<std_msgs::Float64> output_path_x;
   OutputPort<std_msgs::Float64> output_path_y;
 
@@ -24,12 +24,10 @@ private:
   float f_x, f_y, d_o, d_g, f_abs, q_x, q_y, g_x, g_y;
   float o_x[2], o_y[2];
 
-public:
-  PotentialField(const std::string &name) : TaskContext(name),
-                                            output_path_x("path_x"),
-                                            output_path_y("path_x")
+  PotentialFielPlanning(const std::string &name) : TaskContext(name),
+                                                   output_path_x("path_x"),
+                                                   output_path_y("path_x")
   {
-
     delta = 0.1;
     K_a = 5.0;
     K_r = 100.0;
@@ -59,9 +57,10 @@ public:
 
     // Distance to Goal
     d_g = sqrt((g_x - q_x) * (g_x - q_x) + (g_y - q_y) * (g_y - q_y));
+
+    log(Info) << "Configuration done," << endlog();
   }
 
-private:
   float calc_F_att(float q, float q_g, float K)
   {
     return -K * (q - q_g);
@@ -115,4 +114,4 @@ private:
     }
   }
 };
-ORO_CREATE_COMPONENT(PotentialField)
+ORO_CREATE_COMPONENT(PotentialFielPlanning)

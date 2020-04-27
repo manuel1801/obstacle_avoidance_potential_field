@@ -9,8 +9,12 @@ catkin_package(
 )
 
 add_definitions(-DRTT_COMPONENT)
-orocos_component(PotentialField src/potentialField.cpp)
-target_link_libraries(PotentialField ${catkin_LIBRARIES})
+# orocos_component(PotentialField src/potentialField.cpp)
+# target_link_libraries(PotentialField ${catkin_LIBRARIES})
+
+orocos_component(PotentialFielPlanning src/potentialFieldPlanning.cpp)
+target_link_libraries(PotentialFielPlanning ${catkin_LIBRARIES})
+
 
 orocos_generate_package()
 
