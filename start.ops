@@ -3,16 +3,16 @@ ros.import("obstacle_avoidance_potential_field")
 
 loadComponent("potential_field", "PotentialFielPlanning")
 
-
-var double period = 0.1
+var double period = 0.05
 setActivity("potential_field",period, LowestPriority , ORO_SCHED_OTHER )
 
+stream("potential_field.out_path_x", ros.topic("path_topic_x"))
+stream("potential_field.out_path_y", ros.topic("path_topic_y"))
+stream("potential_field.out_obstacle_x", ros.topic("obstacle_topic_x"))
+stream("potential_field.out_obstacle_y", ros.topic("obstacle_topic_y"))
+stream("potential_field.out_obstacle2_x", ros.topic("obstacle2_topic_x"))
+stream("potential_field.out_obstacle2_y", ros.topic("obstacle2_topic_y"))
 
-## Create connections
-## stream("potential_field.float_out", ros.topic("float_out"))
-## stream("potential_field.float_in", ros.topic("float_in"))
-## stream("potential_field.string_out", ros.topic("string_out"))
-## stream("potential_field.string_in", ros.topic("string_in"))
 
 ## Connect the 
 ## loadService("potential_field","rosservice")
@@ -20,5 +20,5 @@ setActivity("potential_field",period, LowestPriority , ORO_SCHED_OTHER )
 ## potential_field.rosservice.connect( "updated", "/updated", "std_srvs/Empty")
 
 ## Configure and start the hello_robot component
-## potential_field.configure()
-## potential_field.start()
+potential_field.configure()
+potential_field.start()
