@@ -7,10 +7,12 @@ using namespace std;
 namespace plt = matplotlibcpp;
 
 float delta = 0.1;
-float K_a = 5.0;
+float K_a = 10.0;
 float K_r = 100.0;
 float d0 = 5.0;
-float radius = 1.3;
+float radius = 1.5;
+
+// g++ potential_field_planning.cpp -I/usr/include/python2.7 -lpython2.7 -o out && ./out
 
 void draw(vector<float> path_x, vector<float> path_y, float *o_x, float *o_y, int n)
 {
@@ -25,7 +27,7 @@ void draw(vector<float> path_x, vector<float> path_y, float *o_x, float *o_y, in
         points_y.push_back(o_y[i]);
     }
 
-    plt::scatter(points_x, points_y, 100);
+    plt::scatter(points_x, points_y, 300);
     plt::show();
 }
 
@@ -66,7 +68,7 @@ int main()
     o_x[0] = 20.0;
     o_y[0] = 15.0;
     o_x[1] = 30.0;
-    o_y[1] = 25.0;
+    o_y[1] = 23.0;
 
     // Trajectory Path
     path_x.push_back(q_x);
