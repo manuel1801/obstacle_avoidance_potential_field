@@ -26,7 +26,7 @@ public:
 
   PotentialFielPlanning(const std::string &name) : TaskContext(name),
                                                    output_path_x("path_x"),
-                                                   output_path_y("path_x")
+                                                   output_path_y("path_y")
   {
     delta = 0.1;
     K_a = 5.0;
@@ -81,7 +81,15 @@ public:
 
   void updateHook()
   {
-    //std_msgs::Float64 fdata;
+    std_msgs::Float64 x;
+    std_msgs::Float64 y;
+
+    x.data = 42.0;
+    y.data = 99.9;
+
+    output_path_x.write(x);
+    output_path_y.write(y);
+
     if (d_g > 0.5)
     {
 
