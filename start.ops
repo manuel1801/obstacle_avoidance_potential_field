@@ -14,11 +14,5 @@ stream("potential_field.out_obstacle2_x", ros.topic("obstacle2_topic_x"))
 stream("potential_field.out_obstacle2_y", ros.topic("obstacle2_topic_y"))
 
 
-## Connect the 
-## loadService("potential_field","rosservice")
-## potential_field.rosservice.connect( "increment", "/increment", "std_srvs/Empty")
-## potential_field.rosservice.connect( "updated", "/updated", "std_srvs/Empty")
-
-## Configure and start the hello_robot component
 potential_field.configure()
 potential_field.start()
