@@ -9,6 +9,7 @@
 #include <std_srvs/Empty.h>
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/Point.h>
 
 using namespace std;
 using namespace RTT;
@@ -17,20 +18,20 @@ class PotentialFielPlanning : public RTT::TaskContext
 {
 
 public:
-  OutputPort<std_msgs::Float64> out_path_x, out_path_y, out_obstacle_x, out_obstacle_y, out_obstacle2_x, out_obstacle2_y;
-  std_msgs::Float64 path_x_msg, path_y_msg, obstacle_x_msg, obstacle_y_msg, obstacle2_x_msg, obstacle2_y_msg;
+  OutputPort<geometry_msgs::Point> out_path, out_obstacle1, out_obstacle2;
+  geometry_msgs::Point path_msg, obstacle1_msg, obstacle2_msg;
 
   vector<float> path_x, path_y;
+
   float delta, K_a, K_r, d0, radius;
   float f_x, f_y, d_o, d_g, f_abs, q_x, q_y, g_x, g_y;
   float o_x[2], o_y[2];
   int N;
 
   PotentialFielPlanning(const std::string &name) : TaskContext(name),
-                                                   out_path_x("out_path_x"), out_path_y("out_path_y"),
-                                                   out_obstacle_x("out_obstacle_x"), out_obstacle_y("out_obstacle_y"),
-                                                   out_obstacle2_x("out_obstacle2_x"), out_obstacle2_y("out_obstacle2_y")
-
+                                                   out_path("out_path"),
+                                                   out_obstacle2("out_obstacle2"),
+                                                   out_obstacle1("out_obstacle1")
   {
 
     delta = 0.1;
@@ -39,12 +40,9 @@ public:
     d0 = 5.0;
     radius = 1.3;
 
-    this->addPort(out_path_x).doc("cordinates of the path in x direction");
-    this->addPort(out_path_y).doc("cordinates of the path in y direction");
-    this->addPort(out_obstacle_x).doc("cordinates of the obstacles in x direction");
-    this->addPort(out_obstacle_y).doc("cordinates of the obstacles in y direction");
-    this->addPort(out_obstacle2_x).doc("cordinates of the 2nd obstacles in x direction");
-    this->addPort(out_obstacle2_y).doc("cordinates of the 2nd obstacles in y direction");
+    this->addPort(out_path).doc("cordinates of the path");
+    this->addPort(out_obstacle1).doc("cordinates of obstacles 1");
+    this->addPort(out_obstacle2).doc("coordinates of obstacle 2");
 
     // Robot Position
     q_x = -20.0;
@@ -66,26 +64,26 @@ public:
     // Distance to Goal
     d_g = sqrt((g_x - q_x) * (g_x - q_x) + (g_y - q_y) * (g_y - q_y));
     N = sizeof(o_x) / sizeof(o_x[0]);
-
-    log(Info) << "Constructor executed." << endlog();
   }
 
   bool configureHook()
   {
 
-    path_x_msg.data = q_x;
-    path_y_msg.data = q_y;
-    obstacle_x_msg.data = o_x[0];
-    obstacle_y_msg.data = o_y[0];
-    obstacle2_x_msg.data = o_x[1];
-    obstacle2_y_msg.data = o_y[1];
+    path_msg.x = q_x;
+    path_msg.y = q_y;
+    path_msg.z = 0;
 
-    out_path_x.write(path_x_msg);
-    out_path_y.write(path_y_msg);
-    out_obstacle_x.write(obstacle_x_msg);
-    out_obstacle_y.write(obstacle_y_msg);
-    out_obstacle2_x.write(obstacle2_x_msg);
-    out_obstacle2_y.write(obstacle2_y_msg);
+    obstacle1_msg.x = o_x[0];
+    obstacle1_msg.y = o_y[0];
+    obstacle1_msg.z = 0;
+
+    obstacle2_msg.x = o_x[1];
+    obstacle2_msg.y = o_y[1];
+    obstacle2_msg.z = 0;
+
+    out_path.write(path_msg);
+    out_obstacle1.write(obstacle1_msg);
+    out_obstacle2.write(obstacle2_msg);
 
     log(Info) << "Configuration done." << endlog();
 
@@ -143,19 +141,21 @@ public:
       d_g = sqrt((g_x - q_x) * (g_x - q_x) + (g_y - q_y) * (g_y - q_y));
       //cout << "Distance: " << d_g << ", Position: x:" << q_x << ", x:" << q_y << endl;
 
-      path_x_msg.data = q_x;
-      path_y_msg.data = q_y;
-      obstacle_x_msg.data = o_x[0];
-      obstacle_y_msg.data = o_y[0];
-      obstacle2_x_msg.data = o_x[1];
-      obstacle2_y_msg.data = o_y[1];
+      path_msg.x = q_x;
+      path_msg.y = q_y;
+      path_msg.z = 0;
 
-      out_path_x.write(path_x_msg);
-      out_path_y.write(path_y_msg);
-      out_obstacle_x.write(obstacle_x_msg);
-      out_obstacle_y.write(obstacle_y_msg);
-      out_obstacle2_x.write(obstacle2_x_msg);
-      out_obstacle2_y.write(obstacle2_y_msg);
+      obstacle1_msg.x = o_x[0];
+      obstacle1_msg.y = o_y[0];
+      obstacle1_msg.z = 0;
+
+      obstacle2_msg.x = o_x[1];
+      obstacle2_msg.y = o_y[1];
+      obstacle2_msg.z = 0;
+
+      out_path.write(path_msg);
+      out_obstacle1.write(obstacle1_msg);
+      out_obstacle2.write(obstacle2_msg);
     }
   }
 };

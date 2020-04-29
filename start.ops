@@ -6,13 +6,9 @@ loadComponent("potential_field", "PotentialFielPlanning")
 var double period = 0.05
 setActivity("potential_field",period, LowestPriority , ORO_SCHED_OTHER )
 
-stream("potential_field.out_path_x", ros.topic("path_topic_x"))
-stream("potential_field.out_path_y", ros.topic("path_topic_y"))
-stream("potential_field.out_obstacle_x", ros.topic("obstacle_topic_x"))
-stream("potential_field.out_obstacle_y", ros.topic("obstacle_topic_y"))
-stream("potential_field.out_obstacle2_x", ros.topic("obstacle2_topic_x"))
-stream("potential_field.out_obstacle2_y", ros.topic("obstacle2_topic_y"))
-
+stream("potential_field.out_path", ros.topic("path_topic"))
+stream("potential_field.out_obstacle1", ros.topic("obstacle1_topic"))
+stream("potential_field.out_obstacle2", ros.topic("obstacle2_topic"))
 
 potential_field.configure()
 potential_field.start()

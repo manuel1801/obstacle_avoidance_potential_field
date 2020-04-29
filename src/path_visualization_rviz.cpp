@@ -3,67 +3,53 @@
 #include "std_msgs/Float64.h"
 #include <visualization_msgs/Marker.h>
 #include <iostream>
+#include <geometry_msgs/Point.h>
 
 using namespace std;
-float p_x, p_y, o_x, o_y, o2_x, o2_y;
+
 float scale_factor = 0.1;
+float o_1[3], o_2[3];
+vector<float> path_x, path_y, path_z;
 
-vector<float> path_x, path_y;
+void pathCB(const geometry_msgs::Point &pathMsg)
+{
+  path_x.push_back(pathMsg.x * scale_factor);
+  path_y.push_back(pathMsg.y * scale_factor);
+  path_z.push_back(pathMsg.z * scale_factor);
+}
 
-void pathXCallback(const std_msgs::Float64 &pathXMsg)
+void obstacle1CB(const geometry_msgs::Point &obst1Msg)
 {
-  p_x = pathXMsg.data * scale_factor;
-  path_x.push_back(p_x);
-  //ROS_INFO("path msg received: x=%f", pathXMsg.data);
+  o_1[0] = obst1Msg.x * scale_factor;
+  o_1[1] = obst1Msg.y * scale_factor;
+  o_1[2] = obst1Msg.z * scale_factor;
+  // ROS_INFO("obstacle 1 x=%f, y=%f, z=%f", o_1[0], o_1[1], o_1[2]);
 }
-void pathYCallback(const std_msgs::Float64 &pathYMsg)
+void obstacle2CB(const geometry_msgs::Point &obst2Msg)
 {
-  p_y = pathYMsg.data * scale_factor;
-  path_y.push_back(p_y);
-  //ROS_INFO("path msg received: y=%f", pathYMsg.data);
-}
-void obstXCallback(const std_msgs::Float64 &obstXMsg)
-{
-  o_x = obstXMsg.data * scale_factor;
-  //ROS_INFO("obstacle msg received: x=%f", obstXMsg.data);
-}
-void obstYCallback(const std_msgs::Float64 &obstYMsg)
-{
-  o_y = obstYMsg.data * scale_factor;
-  //ROS_INFO("obstacle msg received: y=%f", obstYMsg.data);
-}
-void obst2XCallback(const std_msgs::Float64 &obst2XMsg)
-{
-  o2_x = obst2XMsg.data * scale_factor;
-  //ROS_INFO("obstacle msg received: x=%f", obstXMsg.data);
-}
-void obst2YCallback(const std_msgs::Float64 &obst2YMsg)
-{
-  o2_y = obst2YMsg.data * scale_factor;
-  //ROS_INFO("obstacle msg received: y=%f", obstYMsg.data);
+  o_2[0] = obst2Msg.x * scale_factor;
+  o_2[1] = obst2Msg.y * scale_factor;
+  o_2[2] = obst2Msg.z * scale_factor;
 }
 
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "receiver");
+  ros::init(argc, argv, "path_visualization_rviz");
   ros::NodeHandle n;
   ros::Rate rate(10);
 
-  ros::Subscriber path_sub_x = n.subscribe("path_topic_x", 1000, pathXCallback);
-  ros::Subscriber path_sub_y = n.subscribe("path_topic_y", 1000, pathYCallback);
-  ros::Subscriber obstacle_sub_x = n.subscribe("obstacle_topic_x", 1000, obstXCallback);
-  ros::Subscriber obstacle_sub_y = n.subscribe("obstacle_topic_y", 1000, obstYCallback);
-  ros::Subscriber obstacle2_sub_x = n.subscribe("obstacle2_topic_x", 1000, obst2XCallback);
-  ros::Subscriber obstacle2_sub_y = n.subscribe("obstacle2_topic_y", 1000, obst2YCallback);
+  // Subscrie to Coordinate Topics sent by Orocos
+  ros::Subscriber path_sub = n.subscribe("path_topic", 1000, pathCB);
+  ros::Subscriber obstacle1_sub = n.subscribe("obstacle1_topic", 1000, obstacle1CB);
+  ros::Subscriber obstacle2_sub = n.subscribe("obstacle2_topic", 1000, obstacle2CB);
 
+  // Publish to Rviz
   ros::Publisher obstacle_pub = n.advertise<visualization_msgs::Marker>("obstacle_marker", 1);
-
-  p_x = p_y = o_x = o_y = o2_x = o2_y = 0.0;
 
   while (ros::ok())
   {
-    //publish to rviz
+
     visualization_msgs::Marker obstacle, obstacle2, line_strip;
     obstacle.header.frame_id = obstacle2.header.frame_id = line_strip.header.frame_id = "/obstacle_frame";
     obstacle.header.stamp = obstacle2.header.stamp = line_strip.header.stamp = ros::Time::now();
@@ -77,16 +63,15 @@ int main(int argc, char **argv)
 
     obstacle.type = visualization_msgs::Marker::SPHERE;
     obstacle2.type = visualization_msgs::Marker::SPHERE;
-
     line_strip.type = visualization_msgs::Marker::LINE_STRIP;
 
     line_strip.scale.x = 0.08;
     line_strip.color.b = 1.0;
     line_strip.color.a = 1.0;
 
-    obstacle.pose.position.x = o_x;
-    obstacle.pose.position.y = o_y;
-    obstacle.pose.position.z = 0;
+    obstacle.pose.position.x = o_1[0];
+    obstacle.pose.position.y = o_1[1];
+    obstacle.pose.position.z = o_1[2];
     obstacle.pose.orientation.x = 0.0;
     obstacle.pose.orientation.y = 0.0;
     obstacle.pose.orientation.z = 0.0;
@@ -98,10 +83,12 @@ int main(int argc, char **argv)
     obstacle.color.g = 1.0f;
     obstacle.color.b = 0.0f;
     obstacle.color.a = 1.0;
+    obstacle.lifetime = ros::Duration();
+    obstacle_pub.publish(obstacle);
 
-    obstacle2.pose.position.x = o2_x;
-    obstacle2.pose.position.y = o2_y;
-    obstacle2.pose.position.z = 0;
+    obstacle2.pose.position.x = o_2[0];
+    obstacle2.pose.position.y = o_2[1];
+    obstacle2.pose.position.z = o_2[2];
     obstacle2.pose.orientation.x = 0.0;
     obstacle2.pose.orientation.y = 0.0;
     obstacle2.pose.orientation.z = 0.0;
@@ -109,33 +96,12 @@ int main(int argc, char **argv)
     obstacle2.scale.x = 0.3;
     obstacle2.scale.y = 0.3;
     obstacle2.scale.z = 0.3;
-    obstacle2.color.r = 0.0f;
-    obstacle2.color.g = 1.0f;
+    obstacle2.color.r = 1.0f;
+    obstacle2.color.g = 0.0f;
     obstacle2.color.b = 0.0f;
     obstacle2.color.a = 1.0;
-
-    obstacle.lifetime = ros::Duration();
     obstacle2.lifetime = ros::Duration();
-
-    // while (path_sub_x.getNumPublishers() < 1)
-    // {
-    //   if (!ros::ok())
-    //   {
-    //     return 0;
-    //   }
-    //   ROS_WARN_ONCE("waiting for orocos to send first data");
-    //   sleep(1);
-    // }
-
-    // while (obstacle_pub.getNumSubscribers() < 1)
-    // {
-    //   if (!ros::ok())
-    //   {
-    //     return 0;
-    //   }
-    //   ROS_WARN_ONCE("Please create a subscriber to the marker");
-    //   sleep(1);
-    // }
+    obstacle_pub.publish(obstacle2);
 
     for (int i = 0; i < path_x.size(); ++i)
     {
@@ -144,11 +110,8 @@ int main(int argc, char **argv)
       p.x = path_x[i];
       p.y = path_y[i];
       p.z = 0;
-
       line_strip.points.push_back(p);
     }
-    obstacle_pub.publish(obstacle);
-    obstacle_pub.publish(obstacle2);
     obstacle_pub.publish(line_strip);
 
     ros::spinOnce();

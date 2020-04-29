@@ -1,14 +1,13 @@
 <launch>
 
-  <node name="receiver" pkg="obstacle_avoidance_potential_field" type="receiver"/>
-  <node name="rviz" pkg="rviz" type="rviz" output="screen" args="$(find obstacle_avoidance_potential_field)/init_config.rviz"/>
-  
+  <node name="path_visualization_rviz" pkg="obstacle_avoidance_potential_field" type="path_visualization_rviz" output="screen"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="$(find obstacle_avoidance_potential_field)/init_config.rviz"/>
+
   <include file="$(find rtt_ros)/launch/deployer.launch">
       <arg name="DEPLOYER_ARGS" value="-s $(find obstacle_avoidance_potential_field)/start.ops"/>
       <arg name="LOG_LEVEL" value="debug"/>
       <arg name="DEBUG" value="false"/>
   </include>
-
 
 </launch>
 

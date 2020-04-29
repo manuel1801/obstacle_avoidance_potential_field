@@ -34,6 +34,8 @@
   <exec_depend>rtt_rosparam</exec_depend> 
   <exec_depend>rtt_std_msgs</exec_depend> 
   <exec_depend>rtt_std_srvs</exec_depend> 
+  <exec_depend>rtt_geometry_msgs</exec_depend> 
+  
 
   <export>
     <rtt_ros>
@@ -42,6 +44,8 @@
       <plugin_depend>rtt_rosparam</plugin_depend>
       <plugin_depend>rtt_std_msgs</plugin_depend>
       <plugin_depend>rtt_std_srvs</plugin_depend>
+      <plugin_depend>rtt_geometry_msgs</plugin_depend>
+      
     </rtt_ros>
   </export>
 </package>
