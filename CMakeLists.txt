@@ -8,10 +8,14 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   visualization_msgs
   rtt_ros
+  rtt_roscomm
+  interactive_markers
+  visualization_msgs
+  tf
  )
 
 catkin_package(
-  CATKIN_DEPENDS rtt_ros 
+  CATKIN_DEPENDS rtt_ros rtt_roscomm interactive_markers visualization_msgs tf
 )
 
 include_directories(
@@ -23,6 +27,10 @@ add_definitions(-DRTT_COMPONENT)
 orocos_component(PotentialFielPlanning src/potentialFieldPlanning.cpp)
 target_link_libraries(PotentialFielPlanning ${catkin_LIBRARIES})
 
+orocos_component(PotentialFielPlanning_interactive src/potentialFieldPlanning_interactive.cpp)
+target_link_libraries(PotentialFielPlanning_interactive ${catkin_LIBRARIES})
+
+
 orocos_generate_package()
 
 install(FILES 
@@ -32,3 +40,5 @@ install(FILES
 
 add_executable(path_visualization_rviz src/path_visualization_rviz.cpp)
 target_link_libraries(path_visualization_rviz ${catkin_LIBRARIES})
+add_executable(path_visualization_rviz_interactive src/path_visualization_rviz_interactive.cpp)
+target_link_libraries(path_visualization_rviz_interactive ${catkin_LIBRARIES})

@@ -1,16 +1,17 @@
 import("rtt_ros")
 ros.import("obstacle_avoidance_potential_field")
 
-loadComponent("potential_field", "PotentialFielPlanning")
+# loadComponent("potential_field", "PotentialFielPlanning")
+loadComponent("potential_field", "PotentialFielPlanningInt")
 
 var double period = 0.05
-setActivity("potential_field",period, LowestPriority , ORO_SCHED_OTHER )
+setActivity("potential_field", period, LowestPriority , ORO_SCHED_OTHER )
 
-stream("potential_field.out_path", ros.topic("path_topic"))
-stream("potential_field.out_obstacle1", ros.topic("obstacle1_topic"))
-stream("potential_field.out_obstacle2", ros.topic("obstacle2_topic"))
-stream("potential_field.out_obst1_size", ros.topic("obst1_size_topic"))
-stream("potential_field.out_obst2_size", ros.topic("obst2_size_topic"))
+# stream("potential_field.out_path", ros.topic("path_topic"))
+# stream("potential_field.out_obstacle1", ros.topic("obstacle1_topic"))
+# stream("potential_field.out_obstacle2", ros.topic("obstacle2_topic"))
+# stream("potential_field.out_obst1_size", ros.topic("obst1_size_topic"))
+# stream("potential_field.out_obst2_size", ros.topic("obst2_size_topic"))
 
-potential_field.configure()
-potential_field.start()
+# potential_field.configure()
+# potential_field.start()

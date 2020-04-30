@@ -21,11 +21,18 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <exec_depend>interactive_markers</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
 
 
   <build_depend>rtt</build_depend> 
   <build_depend>rtt_ros</build_depend> 
+  <build_depend>rtt_roscomm</build_depend> 
   <build_depend>std_msgs</build_depend> 
+  <build_depend>interactive_markers</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>tf</build_depend>
 
   <exec_depend>rtt</exec_depend> 
   <exec_depend>rtt_ros</exec_depend> 
