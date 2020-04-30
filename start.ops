@@ -4,7 +4,7 @@ ros.import("obstacle_avoidance_potential_field")
 # loadComponent("potential_field", "PotentialFielPlanning")
 loadComponent("potential_field", "PotentialFielPlanningInt")
 
-var double period = 0.05
+var double period = 0.02
 setActivity("potential_field", period, LowestPriority , ORO_SCHED_OTHER )
 
 # stream("potential_field.out_path", ros.topic("path_topic"))

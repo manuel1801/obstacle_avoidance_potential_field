@@ -34,6 +34,7 @@ public:
   float f_x, f_y, d_o, d_g, f_abs, q_x, q_y, g_x, g_y;
   float o_x[1], o_y[1], radius[1];
   int N = 1;
+  bool started = false;
 
   PotentialFielPlanningInt(const std::string &name) : TaskContext(name),
                                                       out_path("out_path"),
@@ -44,10 +45,10 @@ public:
 
   {
 
-    delta = 0.05;
-    K_a = 1.0;
-    K_r = 50.0;
-    d0 = 1.0;
+    delta = 0.01;
+    K_a = 0.5;
+    K_r = 10.0;
+    d0 = 0.5;
 
     this->ports()->addPort(out_path).doc("cordinates of the path");
     out_path.createStream(rtt_roscomm::topic("path_topic"));
@@ -83,27 +84,17 @@ public:
     }
   }
 
-  bool configureHook()
-  {
-    while (in_start_pos.read(start_pos_msg) == RTT::NewData)
-    {
-      q_x = start_pos_msg.x;
-      q_y = start_pos_msg.y;
-      log(Info) << "configured to start: x" << q_x << ", y:" << q_y << endlog();
-    }
-
-    path_msg.x = q_x;
-    path_msg.y = q_y;
-    path_msg.z = 0;
-    out_path.write(path_msg);
-
-    return true;
-  }
-
   void updateHook()
   {
 
     // read from input ports
+    if (in_start_pos.read(start_pos_msg) == RTT::NewData && !started)
+    {
+      q_x = start_pos_msg.x;
+      q_y = start_pos_msg.y;
+      started = true;
+    }
+
     if (in_obst_pos.read(obst_pos_msg) == RTT::NewData)
     {
       o_x[0] = obst_pos_msg.x;
@@ -126,6 +117,10 @@ public:
 
     if (d_g > 0.1)
     {
+      path_msg.x = q_x;
+      path_msg.y = q_y;
+      path_msg.z = 0;
+      out_path.write(path_msg);
 
       // Calculate Attractive Force of Goal
       f_x = calc_F_att(q_x, g_x, K_a);
@@ -149,11 +144,6 @@ public:
       // Add new waypoints to trajectory path
       //path_x.push_back(q_x);
       //path_y.push_back(q_y);
-
-      path_msg.x = q_x;
-      path_msg.y = q_y;
-      path_msg.z = 0;
-      out_path.write(path_msg);
     }
   }
 };
