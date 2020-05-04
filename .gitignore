@@ -5,4 +5,4 @@ test*
 *_test
 temp*
 out
-*_old
+*_old.*
