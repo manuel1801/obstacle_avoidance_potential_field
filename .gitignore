@@ -2,6 +2,7 @@
 .vscode
 .tb_history
 test*
+*_test
 temp*
 out
 *_old
