@@ -1,8 +1,7 @@
 import("rtt_ros")
 ros.import("obstacle_avoidance_potential_field")
 
-# loadComponent("potential_field", "PotentialFielPlanning")
-loadComponent("potential_field", "PotentialFielPlanningInt")
+loadComponent("potential_field", "PotentialFielPlanning")
 
 var double period = 0.02
 setActivity("potential_field", period, LowestPriority , ORO_SCHED_OTHER )

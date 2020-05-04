@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="path_visualization_rviz_interactive" pkg="obstacle_avoidance_potential_field" type="path_visualization_rviz_interactive" output="screen"/>
+  <node name="path_visualization_rviz" pkg="obstacle_avoidance_potential_field" type="path_visualization_rviz" output="screen"/>
     
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find obstacle_avoidance_potential_field)/init_config.rviz"/>
 

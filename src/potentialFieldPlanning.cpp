@@ -10,6 +10,9 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Point.h>
+#include <rtt_ros/rtt_ros.h>
+#include <rtt_roscomm/rostopic.h>
+#include "obstacle_avoidance_potential_field/potentialfield.h"
 
 using namespace std;
 using namespace RTT;
@@ -18,164 +21,81 @@ class PotentialFielPlanning : public RTT::TaskContext
 {
 
 public:
-  OutputPort<geometry_msgs::Point> out_path, out_obstacle1, out_obstacle2;
-  geometry_msgs::Point path_msg, obstacle1_msg, obstacle2_msg;
+  // In- Out Ports
+  OutputPort<geometry_msgs::Point> out_path;
+  InputPort<geometry_msgs::Point> in_start_pos, in_obst_pos, in_goal_pos;
+  InputPort<std_msgs::Float64> in_obst_size;
 
-  OutputPort<std_msgs::Float64> out_obst1_size, out_obst2_size;
-  std_msgs::Float64 obst1_size_msg, obst2_size_msg;
+  // Datatypes for In- Out Ports
+  geometry_msgs::Point path_msg, start_pos_msg, obst_pos_msg, goal_pos_msg;
+  std_msgs::Float64 obst_size_msg;
 
-  vector<float> path_x, path_y;
+  float delta, K_a, K_r, d0, radius;
+  float q[2], o[2], g[2];
+  bool started = false;
 
-  float delta, K_a, K_r, d0;
-  float f_x, f_y, d_o, d_g, f_abs, q_x, q_y, g_x, g_y;
-  float o_x[2], o_y[2], radius[2];
-  int N;
+  PotentialField *p;
 
   PotentialFielPlanning(const std::string &name) : TaskContext(name),
                                                    out_path("out_path"),
-                                                   out_obstacle2("out_obstacle2"),
-                                                   out_obstacle1("out_obstacle1"),
-                                                   out_obst1_size("out_obst1_size"),
-                                                   out_obst2_size("out_obst2_size")
-
+                                                   in_obst_pos("in_obst_pos"),
+                                                   in_goal_pos("in_goal_pos"),
+                                                   in_start_pos("in_start_pos"),
+                                                   in_obst_size("in_obst_size")
   {
 
-    delta = 0.1;
-    K_a = 5.0;
-    K_r = 100.0;
-    d0 = 5.0;
-    radius[0] = 0.9;
-    radius[1] = 0.6;
+    delta = 0.01;
+    K_a = 0.5;
+    K_r = 5.0;
+    d0 = 0.5;
+    p = new PotentialField(delta, K_a, K_r, d0);
 
-    this->addPort(out_path).doc("cordinates of the path");
-    this->addPort(out_obstacle1).doc("cordinates of obstacles 1");
-    this->addPort(out_obstacle2).doc("coordinates of obstacle 2");
-    this->addPort(out_obst1_size).doc("size of obstacle 1");
-    this->addPort(out_obst2_size).doc("size of obstacle 2");
+    this->ports()->addPort(out_path).doc("cordinates of the path");
+    out_path.createStream(rtt_roscomm::topic("path_topic"));
 
-    // Robot Position
-    q_x = -15.0;
-    q_y = -5.0;
+    this->ports()->addPort(in_obst_pos).doc("cordinates of obstacle");
+    in_obst_pos.createStream(rtt_roscomm::topic("obst_pos_topic"));
 
-    // Goal Position
-    g_x = 15.0;
-    g_y = 10.0;
+    this->ports()->addPort(in_goal_pos).doc("coordinates goal");
+    in_goal_pos.createStream(rtt_roscomm::topic("goal_pos_topic"));
 
-    // Obstacles Position
-    o_x[0] = -5.0;
-    o_y[0] = 1.0;
-    o_x[1] = 5.0;
-    o_y[1] = 5.0;
+    this->ports()->addPort(in_start_pos).doc("coordinates start");
+    in_start_pos.createStream(rtt_roscomm::topic("start_pos_topic"));
 
-    path_x.push_back(q_x);
-    path_y.push_back(q_y);
-
-    // Distance to Goal
-    d_g = sqrt((g_x - q_x) * (g_x - q_x) + (g_y - q_y) * (g_y - q_y));
-    N = sizeof(o_x) / sizeof(o_x[0]);
-  }
-
-  bool configureHook()
-  {
-
-    path_msg.x = q_x;
-    path_msg.y = q_y;
-    path_msg.z = 0;
-
-    obstacle1_msg.x = o_x[0];
-    obstacle1_msg.y = o_y[0];
-    obstacle1_msg.z = 0;
-
-    obstacle2_msg.x = o_x[1];
-    obstacle2_msg.y = o_y[1];
-    obstacle2_msg.z = 0;
-
-    obst1_size_msg.data = radius[0];
-    obst2_size_msg.data = radius[1];
-
-    out_path.write(path_msg);
-    out_obstacle1.write(obstacle1_msg);
-    out_obstacle2.write(obstacle2_msg);
-    out_obst1_size.write(obst1_size_msg);
-    out_obst2_size.write(obst2_size_msg);
-
-    log(Info) << "Configuration done." << endlog();
-
-    return true;
-  }
-
-  float calc_F_att(float q, float q_g, float K)
-  {
-    return -K * (q - q_g);
-  }
-
-  float calc_F_rep(float q, float q_o, float K, float d, float d0, float radius)
-  {
-    d -= radius;
-    if (d < d0)
-    {
-      return K * (1.0 / d - 1.0 / d0) * (1.0 / (d * d)) * ((q - q_o) / d);
-    }
-    else
-    {
-      return 0;
-    }
+    this->ports()->addPort(in_obst_size).doc("size of obstacle");
+    in_obst_size.createStream(rtt_roscomm::topic("obst_size_topic"));
   }
 
   void updateHook()
   {
 
-    if (d_g > 0.5)
+    // read from input ports
+    if (in_start_pos.read(start_pos_msg) == RTT::NewData && !started)
     {
-
-      // Calculate Attractive Force of Goal
-      f_x = calc_F_att(q_x, g_x, K_a);
-      f_y = calc_F_att(q_y, g_y, K_a);
-
-      // Calculate Repulsive Forces of all Obstacles
-      for (int i = 0; i < N; i++)
-      {
-        d_o = sqrt((o_x[i] - q_x) * (o_x[i] - q_x) + (o_y[i] - q_y) * (o_y[i] - q_y));
-        f_x += calc_F_rep(q_x, o_x[i], K_r, d_o, d0, radius[i]);
-        f_y += calc_F_rep(q_y, o_y[i], K_r, d_o, d0, radius[i]);
-      }
-
-      // Calculate Magnitude of resulting Force Vector
-      f_abs = sqrt(f_x * f_x + f_y * f_y);
-
-      // Increment Robot Position by the gradients
-      q_x += delta * (f_x / f_abs);
-      q_y += delta * (f_y / f_abs);
-
-      // Add new waypoints to trajectory path
-      path_x.push_back(q_x);
-      path_y.push_back(q_y);
-
-      // Calculate distance to goal with new position
-      d_g = sqrt((g_x - q_x) * (g_x - q_x) + (g_y - q_y) * (g_y - q_y));
-      //cout << "Distance: " << d_g << ", Position: x:" << q_x << ", x:" << q_y << endl;
-
-      path_msg.x = q_x;
-      path_msg.y = q_y;
-      path_msg.z = 0;
-
-      obstacle1_msg.x = o_x[0];
-      obstacle1_msg.y = o_y[0];
-      obstacle1_msg.z = 0;
-
-      obstacle2_msg.x = o_x[1];
-      obstacle2_msg.y = o_y[1];
-      obstacle2_msg.z = 0;
-
-      obst1_size_msg.data = radius[0];
-      obst2_size_msg.data = radius[1];
-
-      out_path.write(path_msg);
-      out_obstacle1.write(obstacle1_msg);
-      out_obstacle2.write(obstacle2_msg);
-      out_obst1_size.write(obst1_size_msg);
-      out_obst2_size.write(obst2_size_msg);
+      q[0] = start_pos_msg.x;
+      q[1] = start_pos_msg.y;
+      started = true;
     }
+    if (in_obst_pos.read(obst_pos_msg) == RTT::NewData)
+    {
+      o[0] = obst_pos_msg.x;
+      o[1] = obst_pos_msg.y;
+    }
+    if (in_goal_pos.read(goal_pos_msg) == RTT::NewData)
+    {
+      g[0] = goal_pos_msg.x;
+      g[1] = goal_pos_msg.y;
+    }
+    if (in_obst_size.read(obst_size_msg) == RTT::NewData)
+    {
+      radius = obst_size_msg.data / 2.0;
+    }
+
+    p->calcPath(q, o, g, radius);
+    path_msg.x = q[0];
+    path_msg.y = q[1];
+    path_msg.z = 0;
+    out_path.write(path_msg);
   }
 };
 ORO_CREATE_COMPONENT(PotentialFielPlanning)

@@ -4,42 +4,167 @@
 #include <visualization_msgs/Marker.h>
 #include <iostream>
 #include <geometry_msgs/Point.h>
+#include <interactive_markers/interactive_marker_server.h>
+#include <tf/transform_broadcaster.h>
+#include <interactive_markers/menu_handler.h>
+#include <tf/tf.h>
+#include <math.h>
 
 using namespace std;
+using namespace visualization_msgs;
 
-float scale_factor = 0.3;
-float o_1[3], o_2[3];
-float o1_size, o2_size;
+boost::shared_ptr<interactive_markers::InteractiveMarkerServer> server;
+interactive_markers::MenuHandler menu_handler;
+
+bool menu_clicked = false;
+geometry_msgs::Point obstacle_pos, start_pos, goal_pos;
+Marker path_marker;
+std_msgs::Float64 size;
+float size_f = 1.0;
 
 vector<float> path_x, path_y, path_z;
 
-void pathCB(const geometry_msgs::Point &pathMsg)
+Marker makeObstacle(InteractiveMarker &msg)
 {
-  path_x.push_back(pathMsg.x * scale_factor);
-  path_y.push_back(pathMsg.y * scale_factor);
-  path_z.push_back(pathMsg.z * scale_factor);
+
+  Marker obstacle;
+  if (msg.name == "obstacle")
+  {
+    obstacle.type = Marker::SPHERE;
+  }
+  else
+  {
+    obstacle.type = Marker::CUBE;
+  }
+
+  obstacle.scale.x = msg.scale * 0.45;
+  obstacle.scale.y = msg.scale * 0.45;
+  obstacle.scale.z = msg.scale * 0.45;
+  obstacle.color.r = 0.5;
+  obstacle.color.g = 0.5;
+  obstacle.color.b = 0.5;
+  obstacle.color.a = 1.0;
+
+  return obstacle;
 }
 
-void obstacle1CB(const geometry_msgs::Point &obst1Msg)
+Marker makeLine(vector<float> path_x, vector<float> path_y)
 {
-  o_1[0] = obst1Msg.x * scale_factor;
-  o_1[1] = obst1Msg.y * scale_factor;
-  o_1[2] = obst1Msg.z * scale_factor;
-  // ROS_INFO("obstacle 1 x=%f, y=%f, z=%f", o_1[0], o_1[1], o_1[2]);
+  // auch in funktion wie bei obstacle
+  Marker line_strip;
+  line_strip.header.frame_id = "/base_frame";
+  line_strip.header.stamp = ros::Time::now();
+  line_strip.ns = "obstacle_path_planning";
+  line_strip.id = 0;
+  line_strip.action = visualization_msgs::Marker::ADD;
+  line_strip.pose.orientation.w = 1.0;
+  line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+  line_strip.scale.x = 0.05;
+  line_strip.color.b = 1.0;
+  line_strip.color.a = 1.0;
+  for (int i = 0; i < path_x.size(); ++i)
+  {
+    geometry_msgs::Point p;
+    p.x = path_x[i];
+    p.y = path_y[i];
+    p.z = 0;
+    line_strip.points.push_back(p);
+  }
+  return line_strip;
 }
-void obstacle2CB(const geometry_msgs::Point &obst2Msg)
+
+void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
 {
-  o_2[0] = obst2Msg.x * scale_factor;
-  o_2[1] = obst2Msg.y * scale_factor;
-  o_2[2] = obst2Msg.z * scale_factor;
+
+  // gets executed when object was moved or size was changed
+
+  //check if moved
+  if (feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::POSE_UPDATE)
+  {
+    if (feedback->marker_name == "obstacle")
+    {
+      obstacle_pos.x = feedback->pose.position.x;
+      obstacle_pos.y = feedback->pose.position.y;
+      obstacle_pos.z = feedback->pose.position.z;
+    }
+    else if (feedback->marker_name == "start")
+    {
+      start_pos.x = feedback->pose.position.x;
+      start_pos.y = feedback->pose.position.y;
+      start_pos.z = feedback->pose.position.z;
+    }
+    else if (feedback->marker_name == "goal")
+    {
+      goal_pos.x = feedback->pose.position.x;
+      goal_pos.y = feedback->pose.position.y;
+      goal_pos.z = feedback->pose.position.z;
+    }
+  }
+  // check if menu
+  else if (feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT)
+  {
+    // feedback contains information which menu entry was clicked
+    menu_clicked = true;
+    ROS_INFO("menu item: %d", feedback->menu_entry_id);
+    switch (feedback->menu_entry_id)
+    {
+    case 1:
+      size.data = 0.5;
+      break;
+    case 2:
+      size.data = 1.0;
+      break;
+    case 3:
+      size.data = 1.5;
+      break;
+    case 4:
+      size.data = 2.0;
+      break;
+    case 5:
+      size.data = 2.5;
+      break;
+    default:
+      break;
+    }
+  }
+  server->applyChanges();
 }
-void obst1SizeCB(const std_msgs::Float64 &obst1SizeMsg)
+
+//void makeObstacleMarker(const tf::Vector3 &position, float size, const char *name)
+void makeObstacleMarker(const geometry_msgs::Point &position, float size, const char *name)
+
 {
-  o1_size = obst1SizeMsg.data * 2 * scale_factor;
+  InteractiveMarker int_marker;
+  int_marker.header.frame_id = "base_frame";
+  tf::pointTFToMsg(tf::Vector3(position.x, position.y, position.z),
+                   int_marker.pose.position);
+
+  int_marker.scale = size;
+  int_marker.name = name;
+  int_marker.description = name;
+
+  InteractiveMarkerControl control;
+
+  tf::Quaternion orien(0.0, 1.0, 0.0, 1.0);
+  orien.normalize();
+  tf::quaternionTFToMsg(orien, control.orientation);
+  control.interaction_mode = InteractiveMarkerControl::MOVE_PLANE;
+  int_marker.controls.push_back(control);
+
+  control.markers.push_back(makeObstacle(int_marker));
+  control.always_visible = true;
+  int_marker.controls.push_back(control);
+  server->insert(int_marker);
+  server->setCallback(int_marker.name, &processFeedback);
+  if (name == "obstacle")
+    menu_handler.apply(*server, int_marker.name);
 }
-void obst2SizeCB(const std_msgs::Float64 &obst2SizeMsg)
+
+void pathCB(const geometry_msgs::Point &pathMsg)
 {
-  o2_size = obst2SizeMsg.data * 2 * scale_factor;
+  path_x.push_back(pathMsg.x);
+  path_y.push_back(pathMsg.y);
+  path_z.push_back(pathMsg.z);
 }
 
 int main(int argc, char **argv)
@@ -49,82 +174,68 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   ros::Rate rate(10);
 
-  // Subscrie to Coordinate Topics sent by Orocos
-  ros::Subscriber path_sub = n.subscribe("path_topic", 1000, pathCB);
-  ros::Subscriber obstacle1_sub = n.subscribe("obstacle1_topic", 1000, obstacle1CB);
-  ros::Subscriber obstacle2_sub = n.subscribe("obstacle2_topic", 1000, obstacle2CB);
-  ros::Subscriber size1_sub = n.subscribe("obst1_size_topic", 1000, obst1SizeCB);
-  ros::Subscriber size2_sub = n.subscribe("obst2_size_topic", 1000, obst2SizeCB);
+  // Publish start, goal, obst, position and size to Orocos
+  ros::Publisher start_pos_pub = n.advertise<geometry_msgs::Point>("start_pos_topic", 1);
+  ros::Publisher goal_pos_pub = n.advertise<geometry_msgs::Point>("goal_pos_topic", 1);
+  ros::Publisher obst_pos_pub = n.advertise<geometry_msgs::Point>("obst_pos_topic", 1);
+  ros::Publisher obst_size_pub = n.advertise<std_msgs::Float64>("obst_size_topic", 1);
 
-  // Publish to Rviz
-  ros::Publisher obstacle_pub = n.advertise<visualization_msgs::Marker>("obstacle_marker", 1);
+  // Subscrie to Topic for path coordinates sent by Orocos
+  ros::Subscriber path_sub = n.subscribe("path_topic", 1000, pathCB);
+
+  // Publish Path coordinates to Rviz
+  ros::Publisher obstacle_pub = n.advertise<visualization_msgs::Marker>("path_marker", 1);
+
+  server.reset(new interactive_markers::InteractiveMarkerServer("basic_controls", "", false));
+
+  ros::Duration(0.1).sleep();
+
+  menu_handler.insert("Size: 0.5", &processFeedback);
+  menu_handler.insert("Size: 1.0", &processFeedback);
+  menu_handler.insert("Size: 1.5", &processFeedback);
+  menu_handler.insert("Size: 2.0", &processFeedback);
+  menu_handler.insert("Size: 2.5", &processFeedback);
+
+  obstacle_pos.x = 0.0;
+  obstacle_pos.y = 0.0;
+  obstacle_pos.z = 0.0;
+
+  start_pos.x = -4.0;
+  start_pos.y = -4.0;
+  start_pos.z = 0.0;
+
+  goal_pos.x = 4.0;
+  goal_pos.y = 4.0;
+  goal_pos.z = 0.0;
+
+  size.data = 1.0;
+
+  makeObstacleMarker(obstacle_pos, size.data, "obstacle");
+  makeObstacleMarker(start_pos, size.data, "start");
+  makeObstacleMarker(goal_pos, size.data, "goal");
+
+  server->applyChanges();
 
   while (ros::ok())
   {
 
-    visualization_msgs::Marker obstacle, obstacle2, line_strip;
-    obstacle.header.frame_id = obstacle2.header.frame_id = line_strip.header.frame_id = "/obstacle_frame";
-    obstacle.header.stamp = obstacle2.header.stamp = line_strip.header.stamp = ros::Time::now();
-    obstacle.ns = obstacle2.ns = line_strip.ns = "obstacle_path_planning";
-    obstacle.id = 0;
-    obstacle2.id = 1;
-    line_strip.id = 2;
+    // publish obst,start,goal pos to orocos
+    start_pos_pub.publish(start_pos);
+    goal_pos_pub.publish(goal_pos);
+    obst_pos_pub.publish(obstacle_pos);
+    obst_size_pub.publish(size);
 
-    obstacle.action = obstacle2.action = line_strip.action = visualization_msgs::Marker::ADD;
-    line_strip.pose.orientation.w = 1.0;
-
-    obstacle.type = visualization_msgs::Marker::SPHERE;
-    obstacle2.type = visualization_msgs::Marker::SPHERE;
-    line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-
-    line_strip.scale.x = 0.05;
-    line_strip.color.b = 1.0;
-    line_strip.color.a = 1.0;
-
-    obstacle.pose.position.x = o_1[0];
-    obstacle.pose.position.y = o_1[1];
-    obstacle.pose.position.z = o_1[2];
-    obstacle.pose.orientation.x = 0.0;
-    obstacle.pose.orientation.y = 0.0;
-    obstacle.pose.orientation.z = 0.0;
-    obstacle.pose.orientation.w = 1.0;
-    obstacle.scale.x = o1_size;
-    obstacle.scale.y = o1_size;
-    obstacle.scale.z = o1_size;
-    obstacle.color.r = 0.0f;
-    obstacle.color.g = 1.0f;
-    obstacle.color.b = 0.0f;
-    obstacle.color.a = 1.0;
-    obstacle.lifetime = ros::Duration();
-    obstacle_pub.publish(obstacle);
-
-    obstacle2.pose.position.x = o_2[0];
-    obstacle2.pose.position.y = o_2[1];
-    obstacle2.pose.position.z = o_2[2];
-    obstacle2.pose.orientation.x = 0.0;
-    obstacle2.pose.orientation.y = 0.0;
-    obstacle2.pose.orientation.z = 0.0;
-    obstacle2.pose.orientation.w = 1.0;
-    obstacle2.scale.x = o2_size;
-    obstacle2.scale.y = o2_size;
-    obstacle2.scale.z = o2_size;
-    obstacle2.color.r = 1.0f;
-    obstacle2.color.g = 0.0f;
-    obstacle2.color.b = 0.0f;
-    obstacle2.color.a = 1.0;
-    obstacle2.lifetime = ros::Duration();
-    obstacle_pub.publish(obstacle2);
-
-    for (int i = 0; i < path_x.size(); ++i)
+    // recreate obstacle with new size
+    if (menu_clicked)
     {
-
-      geometry_msgs::Point p;
-      p.x = path_x[i];
-      p.y = path_y[i];
-      p.z = 0;
-      line_strip.points.push_back(p);
+      makeObstacleMarker(obstacle_pos, size.data, "obstacle");
+      server->applyChanges();
+      menu_clicked = false;
     }
-    obstacle_pub.publish(line_strip);
+
+    // publish path as line to rviz
+    path_marker = makeLine(path_x, path_y);
+    obstacle_pub.publish(path_marker);
 
     ros::spinOnce();
     rate.sleep();

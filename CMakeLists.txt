@@ -19,19 +19,42 @@ catkin_package(
 )
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
+add_library(potentialfield
+  src/potentialfield.cpp
+)
+
 
 add_definitions(-DRTT_COMPONENT)
 
 orocos_component(PotentialFielPlanning src/potentialFieldPlanning.cpp)
-target_link_libraries(PotentialFielPlanning ${catkin_LIBRARIES})
-
-orocos_component(PotentialFielPlanning_interactive src/potentialFieldPlanning_interactive.cpp)
-target_link_libraries(PotentialFielPlanning_interactive ${catkin_LIBRARIES})
+target_link_libraries(PotentialFielPlanning
+  ${catkin_LIBRARIES}
+  potentialfield
+)
 
 
 orocos_generate_package()
+
+
+catkin_package(INCLUDE_DIRS include
+                LIBRARIES potentialfield)
+
+
+install(TARGETS potentialfield
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
+
 
 install(FILES 
   start.launch 
@@ -40,5 +63,3 @@ install(FILES
 
 add_executable(path_visualization_rviz src/path_visualization_rviz.cpp)
 target_link_libraries(path_visualization_rviz ${catkin_LIBRARIES})
-add_executable(path_visualization_rviz_interactive src/path_visualization_rviz_interactive.cpp)
-target_link_libraries(path_visualization_rviz_interactive ${catkin_LIBRARIES})
