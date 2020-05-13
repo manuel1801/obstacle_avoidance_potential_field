@@ -12,6 +12,7 @@
 #include <geometry_msgs/Point.h>
 #include <rtt_ros/rtt_ros.h>
 #include <rtt_roscomm/rostopic.h>
+
 #include "obstacle_avoidance_potential_field/potentialfield.h"
 
 using namespace std;

@@ -7,6 +7,7 @@
 #include <interactive_markers/interactive_marker_server.h>
 #include <tf/transform_broadcaster.h>
 #include <interactive_markers/menu_handler.h>
+
 #include <tf/tf.h>
 #include <math.h>
 
@@ -105,7 +106,6 @@ void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr
   {
     // feedback contains information which menu entry was clicked
     menu_clicked = true;
-    ROS_INFO("menu item: %d", feedback->menu_entry_id);
     switch (feedback->menu_entry_id)
     {
     case 1:
